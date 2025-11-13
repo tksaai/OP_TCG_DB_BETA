@@ -1,26 +1,33 @@
 {
-    "name": "ワンピースカード DB PWA",
-    "short_name": "OP-TCG DB",
-    "description": "ワンピースカードゲームのオフライン対応データベースPWA",
-    "start_url": "./index.html",
-    "scope": ".",
-    "display": "standalone",
-    "background_color": "#121212",
-    "theme_color": "#1e1e1e",
-    "orientation": "portrait",
-    "icons": [
-        {
-            "src": "./icons/iconx192.png",
-            "type": "image/png",
-            "sizes": "192x192",
-            "purpose": "any maskable"
-        },
-        {
-            "src": "./icons/iconx512.png",
-            "type": "image/png",
-            "sizes": "512x512",
-            "purpose": "any maskable"
-        }
-    ]
+  "name": "OP TCG DB",
+  "short_name": "OP TCG DB",
+  "start_url": "/OP_TCG_DB_BETA/",
+  "scope": "/OP_TCG_DB_BETA/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "icons/iconx192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/iconx512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/iconx192bk.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icons/iconx512bk.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
 }
-
