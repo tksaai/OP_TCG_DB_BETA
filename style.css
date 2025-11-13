@@ -1,811 +1,556 @@
-/* === 1. 基本設定とダークテーマ === */
-:root {
-    /* 1a. ダークテーマのカラーパレット */
-    --color-background: #121212;
-    --color-surface: #1E1E1E;
-    --color-on-background: #E0E0E0;
-    --color-on-surface: #FFFFFF;
-    --color-primary: #BB86FC;
-    --color-primary-variant: #3700B3;
-    --color-secondary: #03DAC6;
-    --color-error: #CF6679;
-    --color-on-primary: #000000;
-    --color-border: #333333;
-    --color-success: #4CAF50;
-    --color-shadow: rgba(0, 0, 0, 0.5);
-    --color-progress: var(--color-primary);
-
-    /* 1b. レイアウト変数 (セーフエリア対応) */
-    /* ★ 修正: セーフエリア変数を定義 */
-    --safe-area-top: env(safe-area-inset-top, 0px);
-    --safe-area-bottom: env(safe-area-inset-bottom, 0px);
-    --safe-area-left: env(safe-area-inset-left, 0px);
-    --safe-area-right: env(safe-area-inset-right, 0px);
-
-    /* ヘッダーとフッターの基本高さ */
-    --header-height: 56px;
-    --footer-height: 60px;
-
-    /* カードグリッドの列数 (JSで変更可能) */
-    --grid-columns: 3;
-}
-
-/* === 2. グローバルスタイル === */
-* {
+/* 基本スタイル */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
-    -webkit-tap-highlight-color: transparent;
+    background-color: #f0f2f5;
+    color: #333;
 }
 
-html, body {
-    width: 100%;
-    height: 100%; /* ★ 修正: 100% を維持 */
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    background-color: var(--color-background);
-    color: var(--color-on-background);
-    overflow: hidden; /* ★ 修正: スクロールを禁止 (main-contentで制御) */
-    overscroll-behavior: none; /* ★ 修正: バウンスを無効化 */
-    /* ★ 修正: position: fixed; を削除 */
+header {
+    background-color: #333;
+    color: white;
+    padding: 1rem;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+h1 {
+    text-align: center;
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.search-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 1rem;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+#searchInput {
+    width: 60%;
+    max-width: 400px;
+    padding: 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: 25px;
+    font-size: 1rem;
 }
 
 button {
-    font-family: inherit;
+    padding: 0.75rem 1rem;
+    background-color: #007bff;
+    color: white;
     border: none;
-    background: none;
-    color: inherit;
+    border-radius: 25px;
     cursor: pointer;
-    padding: 8px;
-    border-radius: 8px;
-    transition: background-color 0.2s ease;
-}
-
-button:disabled {
-    color: var(--color-border);
-    cursor: not-allowed;
-    opacity: 0.5;
-}
-
-input[type="search"] {
-    font-family: inherit;
-    font-size: 16px;
-    border: none;
-    outline: none;
-    width: 100%;
-    background-color: transparent;
-    color: var(--color-on-surface);
-}
-input[type="search"]::-webkit-search-cancel-button {
-    -webkit-appearance: none;
-    display: none;
-}
-
-/* === 3. アプリケーションレイアウト === */
-/* ★ 修正: app-container をスクロールの基準コンテナに変更 */
-.app-container {
-    position: relative; /* 子の absolute 配置の基準 */
-    width: 100%;
-    height: 100%;
-    overflow: hidden; /* .main-content 以外は隠す */
-    background-color: var(--color-background);
-    /* ★ 修正: セーフエリアの padding は ヘッダー/フッター に移動 */
-}
-
-/* 3a. ヘッダー */
-.app-header {
-    /* ★ 修正: position: fixed で画面上部に固定 */
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    
-    /* ★ 修正: 高さを基本高さ + セーフエリア分に */
-    height: calc(var(--header-height) + var(--safe-area-top));
-    /* ★ 修正: 内部のコンテンツをセーフエリア分下げる */
-    padding-top: var(--safe-area-top);
-    /* ★ 修正: 左右のセーフエリアもパディングで対応 */
-    padding-left: var(--safe-area-left);
-    padding-right: var(--safe-area-right);
-
-    background-color: var(--color-surface);
-    box-shadow: 0 2px 5px var(--color-shadow);
-    z-index: 10;
-    
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-}
-
-.header-content {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    height: var(--header-height); /* ★ 修正: 高さを固定値に戻す */
-    padding: 0 12px;
-    flex-shrink: 0; 
-}
-
-.search-bar-container {
-    flex-grow: 1;
-    position: relative;
-    display: flex;
-    align-items: center;
-    background-color: var(--color-background);
-    border-radius: 8px;
-    padding: 0 8px;
-    height: 36px;
-}
-
-.clear-search-btn {
-    position: absolute;
-    right: 4px;
-    padding: 4px;
-    color: var(--color-on-background);
-    display: none; /* JSで制御 */
-    border-radius: 50%;
-}
-.clear-search-btn svg {
-    display: block;
-}
-
-.header-btn {
-    flex-shrink: 0;
-    padding: 6px;
-    border-radius: 50%;
-    color: var(--color-secondary);
-}
-.header-btn:hover {
-    background-color: var(--color-border);
-}
-
-/* 3b. メインコンテンツ (スクロールエリア) */
-.main-content {
-    /* ★ 修正: position: absolute を削除 */
-    /* 親(.app-container) がスクロールし、ヘッダー/フッターが fixed で覆いかぶさる形に変更 */
-    
-    /* ★ 修正: height: 100% を設定 */
-    height: 100%;
-    
-    overflow-y: auto; /* ここだけスクロール */
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch; /* iOSでの慣性スクロール */
-    
-    /* ★ 修正: バウンス（オーバースクロール）の伝播を防止 */
-    overscroll-behavior-y: contain;
-
-    padding: 8px; /* 内側の padding (カードと端の隙間) */
-    
-    /* ★ 修正: ヘッダーとフッターが fixed になったため、
-       スクロールコンテンツが隠れないように padding で隙間を空ける */
-    padding-top: calc(var(--header-height) + var(--safe-area-top) + 8px); /* ヘッダー分 + 上部余白 */
-    padding-bottom: calc(var(--footer-height) + var(--safe-area-bottom) + 8px); /* フッター分 + 下部余白 */
-    padding-left: calc(var(--safe-area-left) + 8px);
-    padding-right: calc(var(--safe-area-right) + 8px);
-}
-
-/* 3c. フッター */
-.app-footer {
-    /* ★ 修正: position: fixed で画面下部に固定 */
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    
-    /* ★ 修正: 高さを基本高さ + セーフエリア分に */
-    height: calc(var(--footer-height) + var(--safe-area-bottom));
-    /* ★ 修正: 内部のコンテンツをセーフエリア分上げる (padding-bottom を使う) */
-    padding-bottom: var(--safe-area-bottom);
-    /* ★ 修正: 左右のセーフエリアもパディングで対応 */
-    padding-left: var(--safe-area-left);
-    padding-right: var(--safe-area-right);
-
-    background-color: var(--color-surface);
-    box-shadow: 0 -2px 5px var(--color-shadow);
-    z-index: 10;
-}
-
-.footer-nav {
-    display: flex;
-    justify-content: space-around;
-    align-items: flex-start; /* ★ 修正: align-items を flex-start に */
-    height: 100%;
-    /* ★ 修正: padding-top を nav-btn 側に移動 */
-}
-
-.nav-btn {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center; /* 中央寄せ */
-    align-items: center;
-    font-size: 10px;
-    color: var(--color-on-background);
-    border-radius: 0; 
-    gap: 4px;
-    height: 100%; /* ★ 修正: 高さを100%に */
-    padding: 4px 0; /* ★ 修正: 上下の padding を調整 */
-}
-.nav-btn svg {
-    width: 24px;
-    height: 24px;
-    stroke-width: 2;
-}
-.nav-btn.active {
-    color: var(--color-primary);
-}
-.nav-btn:not(:disabled):hover {
-    background-color: var(--color-border);
-}
-
-/* 列数切り替えボタンのスタイル */
-.nav-btn span {
-    font-size: 12px;
-    line-height: 1;
-}
-.nav-btn span.column-count-display {
-    display: block;
-    font-size: 14px;
+    font-size: 1rem;
     font-weight: bold;
-    color: var(--color-secondary);
-    line-height: 1;
-}
-#column-toggle-btn {
-    color: var(--color-on-background);
-}
-#column-toggle-btn:hover {
-    background-color: var(--color-border);
+    transition: background-color 0.3s ease;
 }
 
+button:hover {
+    background-color: #0056b3;
+}
 
-/* === 4. カード一覧 === */
-.card-list-container {
+#resetButton {
+    background-color: #6c757d;
+}
+#resetButton:hover {
+    background-color: #5a6268;
+}
+
+/* タブスタイル */
+.tab-buttons {
+    display: flex;
+    justify-content: center;
+    margin-top: 1rem;
+    background-color: #444;
+    border-radius: 25px;
+    overflow: hidden;
+    display: inline-block;
+    left: 50%;
+    position: relative;
+    transform: translateX(-50%);
+}
+
+.tab-button {
+    padding: 0.75rem 1.5rem;
+    background-color: #444;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.3s ease;
+    border-radius: 0; /* ボタンの丸みをリセット */
+}
+
+.tab-button.active {
+    background-color: #007bff;
+    font-weight: bold;
+}
+
+.tab-button:not(.active):hover {
+    background-color: #555;
+}
+
+.tab-content {
+    display: none;
+    padding: 1rem;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* カードリスト */
+.card-list {
     display: grid;
-    grid-template-columns: repeat(var(--grid-columns), 1fr);
-    /* ★ 修正: フィルタ画面のUI変更に伴い、gap: 0; に */
-    gap: 0;
-    /* ★ 修正: padding を .main-content に移動したため削除 */
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+    padding: 1rem;
 }
 
 .card-item {
-    width: 100%;
-    aspect-ratio: 120 / 168; /* カードの縦横比 */
-    background-color: var(--color-surface);
-    /* ★ 修正: フィルタ画面のUI変更に伴い、border-radius: 0; に */
-    border-radius: 0; 
-    overflow: hidden;
-    /* ★ 修正: フィルタ画面のUI変更に伴い、box-shadow: none; に */
-    box-shadow: none;
-    
-    /* ★ 修正: タップイベントのずれ対策 */
     cursor: pointer;
-    user-select: none;
-    -webkit-user-select: none;
-    
-    /* ★ 修正: フィルタ画面のUI変更に伴い、グリッド線を追加 */
-    border-right: 1px solid var(--color-border);
-    border-bottom: 1px solid var(--color-border);
-}
-/* グリッドの端のボーダーを調整 */
-.card-list-container {
-    border-top: 1px solid var(--color-border);
-    border-left: 1px solid var(--color-border);
+    transition: transform 0.2s ease;
 }
 
-
-.card-image {
+.card-item img {
     width: 100%;
-    height: 100%;
-    object-fit: cover;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     display: block;
-    border: 0;
 }
 
-.card-fallback {
-    width: 100%;
-    height: 100%;
+.card-item:hover {
+    transform: scale(1.05);
+}
+
+/* デッキ構築タブ */
+#deckBuilderContainer {
     display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    font-size: 12px;
-    font-weight: bold;
-    color: var(--color-on-background);
-    padding: 4px;
-    word-break: break-all;
+    flex-direction: row;
+    gap: 1.5rem;
+    height: calc(100vh - 180px); /* ヘッダーの高さを考慮 */
 }
 
-.no-results {
-    text-align: center;
-    padding: 32px;
-    color: var(--color-on-background);
-    grid-column: 1 / -1; /* 全列にまたがる */
-}
-
-/* === 5. ローディングインジケータ === */
-.loading-indicator {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+#deckCardSearchContainer {
+    flex: 3;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    padding: 1rem;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 16px;
-    padding: 24px;
-    background-color: var(--color-surface);
-    border-radius: 12px;
-    z-index: 5;
-}
-.spinner {
-    width: 48px;
-    height: 48px;
-    border: 5px solid var(--color-border);
-    border-top-color: var(--color-primary);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
-@keyframes spin {
-    to { transform: rotate(360deg); }
 }
 
-/* === 6. モーダル (汎用) === */
-.modal-overlay {
-    position: fixed;
-    inset: 0;
-    background-color: rgba(0, 0, 0, 0.7);
+#deckCardSearchContainer h2 {
+    margin-top: 0;
+    text-align: center;
+    font-size: 1.2rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #eee;
+}
+
+#deckCardList {
+    flex-grow: 1;
+    overflow-y: auto;
+    /* スクロールバーのスタイル（任意） */
+    scrollbar-width: thin;
+    scrollbar-color: #ccc #f0f2f5;
+}
+
+#deckListContainer {
+    flex: 2;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+#deckListContainer h2 {
+    margin-top: 0;
+    text-align: center;
+    font-size: 1.2rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #eee;
+}
+
+#deckListContainer h3 {
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+    color: #333;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 0.25rem;
+}
+
+#deckInfo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+
+#clearDeckButton {
+    background-color: #dc3545;
+    font-size: 0.8rem;
+    padding: 0.5rem 0.75rem;
+}
+#clearDeckButton:hover {
+    background-color: #c82333;
+}
+
+#leaderCardSlot {
+    width: 100%;
+    max-width: 200px;
+    margin: 0 auto;
+    padding: 0.5rem;
+    border: 2px dashed #ccc;
+    border-radius: 8px;
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 1000;
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    animation: fadeIn 0.2s ease-out;
+    min-height: 150px;
+    text-align: center;
+    color: #888;
 }
 
-/* モーダルのラッパー (セーフエリア対応) */
-.modal-content-wrapper {
+#leaderCardSlot img {
     width: 100%;
-    max-width: 600px;
-    /* 上下のマージン (セーフエリア考慮) */
-    margin-top: calc(16px + var(--safe-area-top));
-    margin-bottom: calc(16px + var(--safe-area-bottom));
-    /* 左右のマージン (セーフエリア考慮) */
-    margin-left: calc(16px + var(--safe-area-left));
-    margin-right: calc(16px + var(--safe-area-right));
+    height: auto;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+#mainDeckList {
+    flex-grow: 1;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 0.5rem;
+    min-height: 200px;
+    overflow-y: auto;
+    background: #fdfdfd;
+}
+
+.deck-card-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.deck-card-item:hover {
+    background-color: #f9f9f9;
+}
+
+.deck-card-item span:first-child {
+    flex-grow: 1;
+}
+
+.deck-card-item .card-count {
+    font-weight: bold;
+    margin-left: 1rem;
+    padding: 0.25rem 0.5rem;
+    background: #eee;
+    border-radius: 12px;
+    min-width: 30px;
+    text-align: center;
+}
+
+.deck-card-item .remove-card {
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-left: 0.5rem;
+    line-height: 24px;
+    text-align: center;
+}
+
+.deck-actions {
+    margin-top: 1rem;
+}
+
+.deck-actions textarea {
+    width: 100%;
+    box-sizing: border-box; /* パディングとボーダーを幅に含める */
+    margin-bottom: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 0.5rem;
+    font-size: 0.8rem;
+    resize: none;
+}
+
+.deck-buttons {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.deck-actions button {
+    flex-grow: 1;
+    font-size: 0.9rem;
+    padding: 0.6rem;
+}
+
+#loadDeckCodeButton {
+    background-color: #28a745;
+}
+#loadDeckCodeButton:hover {
+    background-color: #218838;
+}
+
+/* モーダル */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.6);
 }
 
 .modal-content {
+    background-color: #fff;
+    margin: 5% auto;
+    padding: 2rem;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 800px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    position: relative;
+}
+
+/* カード詳細モーダル */
+#cardModal .modal-content {
+    display: flex;
+    flex-direction: column;
+}
+
+#cardModal img {
     width: 100%;
-    background-color: var(--color-surface);
-    border-radius: 16px;
-    box-shadow: 0 10px 30px var(--color-shadow);
-    display: flex;
-    flex-direction: column;
-    /* 高さが画面を超える場合 (セーフエリアマージン分を引く) */
-    max-height: calc(100vh - (16px + var(--safe-area-top)) - (16px + var(--safe-area-bottom)));
-    animation: slideIn 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+    max-width: 300px;
+    height: auto;
+    border-radius: 10px;
+    margin: 0 auto 1rem;
 }
 
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--color-border);
-    flex-shrink: 0;
-}
-.modal-header h2 {
-    font-size: 20px;
-    font-weight: 600;
-    color: var(--color-on-surface);
+#modalDetails {
+    text-align: left;
 }
 
-.modal-close-btn {
-    font-size: 28px;
-    font-weight: 300;
-    color: var(--color-on-background);
-    padding: 0;
-    border-radius: 50%;
-    width: 32px;
-    height: 32px;
-    line-height: 32px;
-    text-align: center;
-}
-.modal-close-btn:hover {
-    background-color: var(--color-border);
+#modalDetails h2 {
+    margin-top: 0;
 }
 
-.modal-body {
-    padding: 16px 20px;
+#modalDetails p {
+    margin: 0.5rem 0;
+    line-height: 1.5;
+}
+
+/* フィルターモーダル */
+.filter-modal-content {
+    max-height: 80vh;
     overflow-y: auto;
-    flex-grow: 1;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: contain; /* モーダル内のスクロールが背景に伝播するのを防ぐ */
+    padding: 1.5rem;
 }
 
-.modal-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    padding: 16px 20px;
-    border-top: 1px solid var(--color-border);
-    flex-shrink: 0;
+.close, .close-filter {
+    color: #aaa;
+    position: absolute;
+    top: 1rem;
+    right: 1.5rem;
+    font-size: 2rem;
+    font-weight: bold;
+    cursor: pointer;
 }
 
-/* === 7. モーダルボタン === */
-.modal-btn {
-    font-size: 16px;
-    font-weight: 600;
-    padding: 10px 16px;
+.close:hover,
+.close-filter:hover {
+    color: #333;
+}
+
+.filter-section {
+    border: 1px solid #e0e0e0;
     border-radius: 8px;
-}
-.modal-btn-primary {
-    background-color: var(--color-primary);
-    color: var(--color-on-primary);
-}
-.modal-btn-primary:hover {
-    opacity: 0.8;
-}
-.modal-btn-secondary {
-    background-color: var(--color-border);
-    color: var(--color-on-background);
-}
-.modal-btn-secondary:hover {
-    opacity: 0.8;
-}
-.modal-btn-danger {
-    background-color: var(--color-error);
-    color: var(--color-on-primary);
-}
-.modal-btn-danger:hover {
-    opacity: 0.8;
+    padding: 0.5rem 1rem 1rem;
+    margin-bottom: 1rem;
 }
 
-
-/* === 8. フィルタモーダル特有 === */
-.filter-options-container {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
-.filter-group {
-    border: none;
-    padding: 0;
-    margin: 0;
-}
-.filter-group legend {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--color-on-surface);
-    margin-bottom: 12px;
+.filter-section legend {
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: #007bff;
+    padding: 0 0.5rem;
 }
 
 .filter-grid {
-    display: grid;
-    gap: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
 }
 
-/* フィルタタイプごとの列幅調整 */
-.filter-grid.colors {
-    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+.filter-grid.large-grid {
+    gap: 0.5rem;
 }
-.filter-grid.costs {
-    grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
-}
-.filter-grid.types {
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-}
-.filter-grid.rarities {
-    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
-}
-/* ★ 修正: .features のスタイルを削除 */
 
-
-.filter-checkbox-label {
-    position: relative;
-    display: block;
-    /* ★ 修正: タップ判定のため */
+/* カスタムトグルボタン */
+.filter-toggle {
+    display: inline-block;
     cursor: pointer;
-    user-select: none;
-    -webkit-user-select: none;
 }
 
-.filter-checkbox {
-    position: absolute;
-    opacity: 0;
-    width: 0;
-    height: 0;
-    /* ★ 修正: タップ判定のため */
-    pointer-events: none;
+.filter-toggle input[type="checkbox"] {
+    display: none; /* 元のチェックボックスを隠す */
 }
 
-.filter-checkbox-ui {
+.filter-toggle span {
     display: block;
-    width: 100%;
-    padding: 10px 8px;
-    border: 2px solid var(--color-border);
-    border-radius: 8px;
-    text-align: center;
-    font-size: 14px;
+    padding: 0.6rem 1rem;
+    background-color: #f0f2f5;
+    color: #555;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    font-size: 0.9rem;
     font-weight: 500;
-    cursor: pointer;
     transition: all 0.2s ease;
     user-select: none;
-    /* ★ 修正: タップ判定のため */
-    pointer-events: none;
-}
-.filter-checkbox-label:hover .filter-checkbox-ui {
-    background-color: var(--color-border);
 }
 
-/* 色フィルタの特別なスタイル */
-.filter-checkbox-label[data-color="Red"] .filter-checkbox-ui { border-color: #D32F2F; }
-.filter-checkbox-label[data-color="Green"] .filter-checkbox-ui { border-color: #388E3C; }
-.filter-checkbox-label[data-color="Blue"] .filter-checkbox-ui { border-color: #1976D2; }
-.filter-checkbox-label[data-color="Purple"] .filter-checkbox-ui { border-color: #7B1FA2; }
-.filter-checkbox-label[data-color="Black"] .filter-checkbox-ui { border-color: #9E9E9E; }
-.filter-checkbox-label[data-color="Yellow"] .filter-checkbox-ui { border-color: #FBC02D; }
-
-/* チェックされた時のスタイル */
-.filter-checkbox:checked + .filter-checkbox-ui {
-    background-color: var(--color-primary);
-    color: var(--color-on-primary);
-    border-color: var(--color-primary);
-    box-shadow: 0 0 8px var(--color-primary);
+.filter-grid.large-grid span {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
 }
-/* 色フィルタのチェック時 */
-.filter-checkbox:checked + .filter-checkbox-ui[data-color="Red"] { background-color: #D32F2F; border-color: #D32F2F; color: #fff; box-shadow: 0 0 8px #D32F2F; }
-.filter-checkbox:checked + .filter-checkbox-ui[data-color="Green"] { background-color: #388E3C; border-color: #388E3C; color: #fff; box-shadow: 0 0 8px #388E3C; }
-.filter-checkbox:checked + .filter-checkbox-ui[data-color="Blue"] { background-color: #1976D2; border-color: #1976D2; color: #fff; box-shadow: 0 0 8px #1976D2; }
-.filter-checkbox:checked + .filter-checkbox-ui[data-color="Purple"] { background-color: #7B1FA2; border-color: #7B1FA2; color: #fff; box-shadow: 0 0 8px #7B1FA2; }
-.filter-checkbox:checked + .filter-checkbox-ui[data-color="Black"] { background-color: #9E9E9E; border-color: #9E9E9E; color: #000; box-shadow: 0 0 8px #9E9E9E; }
-.filter-checkbox:checked + .filter-checkbox-ui[data-color="Yellow"] { background-color: #FBC02D; border-color: #FBC02D; color: #000; box-shadow: 0 0 8px #FBC02D; }
 
-
-/* シリーズ (Select) */
-.filter-select {
-    width: 100%;
-    font-size: 16px;
-    padding: 10px;
-    border-radius: 8px;
-    border: 2px solid var(--color-border);
-    background-color: var(--color-background);
-    color: var(--color-on-background);
-    appearance: none;
-    -webkit-appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23E0E0E0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 10px center;
-    background-size: 24px;
+.filter-toggle input[type="checkbox"]:checked + span {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+    box-shadow: 0 2px 4px rgba(0,123,255,0.2);
 }
-.filter-select:focus {
-    outline: none;
-    border-color: var(--color-primary);
-    box-shadow: 0 0 8px var(--color-primary);
+
+.filter-toggle:hover span {
+    background-color: #e9ecef;
+}
+
+.filter-toggle input[type="checkbox"]:checked:hover + span {
+    background-color: #0069d9;
 }
 
 
-/* === 9. 設定モーダル特有 === */
-.settings-group {
-    margin-bottom: 24px;
-}
-.settings-group legend {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--color-on-surface);
-    margin-bottom: 12px;
-    border-bottom: 1px solid var(--color-border);
-    padding-bottom: 4px;
-}
-.setting-item {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-.setting-item + .setting-item {
-    margin-top: 16px;
-}
-.setting-item p {
-    font-size: 14px;
-    line-height: 1.5;
-    color: var(--color-on-background);
-}
-.setting-item .modal-btn {
-    align-self: flex-start;
+#applyFilters, #resetFiltersInModal {
+    width: calc(50% - 0.5rem);
+    margin-top: 1rem;
+    padding: 0.8rem;
+    font-size: 1.1rem;
 }
 
-.app-version {
-    font-size: 14px;
-    color: var(--color-on-background);
-    opacity: 0.7;
+#resetFiltersInModal {
+    background-color: #6c757d;
+}
+#resetFiltersInModal:hover {
+    background-color: #5a6268;
 }
 
-/* === 10. ライトボックス (画像拡大) === */
-.lightbox-overlay {
-    position: fixed;
-    inset: 0;
-    background-color: rgba(0, 0, 0, 0.85);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 2000;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    
-    /* ★ 修正: padding を追加 (セーフエリア対応) */
-    padding-top: var(--safe-area-top);
-    padding-bottom: var(--safe-area-bottom);
-    padding-left: var(--safe-area-left);
-    padding-right: var(--safe-area-right);
+/* レスポンシブ */
+@media (min-width: 768px) {
+    .card-list {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    }
+
+    #cardModal .modal-content {
+        flex-direction: row;
+        gap: 1.5rem;
+    }
+
+    #cardModal img {
+        width: 40%;
+        margin: 0;
+    }
+
+    #modalDetails {
+        width: 60%;
+    }
 }
 
-.lightbox-close-btn {
-    position: absolute;
-    /* ★ 修正: top/right をセーフエリアマージン基準に */
-    top: calc(16px + var(--safe-area-top));
-    right: calc(16px + var(--safe-area-right));
-    font-size: 36px;
-    font-weight: 300;
-    color: #fff;
-    background-color: rgba(0, 0, 0, 0.3);
-    border-radius: 50%;
-    width: 44px;
-    height: 44px;
-    line-height: 44px;
-    text-align: center;
-    z-index: 2002;
-    padding: 0; /* padding リセット */
-}
+@media (max-width: 767px) {
+    body {
+        font-size: 14px;
+    }
 
-.lightbox-image, .lightbox-fallback {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-    border-radius: 12px;
-    z-index: 2001;
-}
-.lightbox-fallback {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    /* サイズを画像と合わせるため */
-    width: 90vw; 
-    height: 90vh;
-    background-color: var(--color-surface);
-    color: var(--color-on-surface);
-    font-size: 1.5rem;
-    font-weight: bold;
-    text-align: center;
-    padding: 20px;
-    word-break: break-all;
-}
+    .search-container {
+        flex-direction: column;
+        align-items: center;
+    }
+    #searchInput {
+        width: 90%;
+    }
+    .search-container button {
+        width: 90%;
+        margin-top: 0.5rem;
+    }
 
+    .tab-buttons {
+        width: 90%;
+    }
+    .tab-button {
+        flex-grow: 1;
+        font-size: 0.9rem;
+    }
+    .tab-content {
+        padding: 0.5rem;
+    }
 
-/* === 11. 通知エリア === */
-#notification-area {
-    position: fixed;
-    /* ★ 修正: bottom をフッターの高さ + セーフエリア基準に */
-    bottom: calc(var(--footer-height) + var(--safe-area-bottom) + 12px);
-    /* ★ 修正: left/right もセーフエリア基準に */
-    left: calc(var(--safe-area-left) + 12px);
-    right: calc(var(--safe-area-right) + 12px);
-    
-    width: auto; /* width: 100% を削除 */
-    
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    z-index: 1001;
-    pointer-events: none;
-}
+    /* デッキ構築タブ (縦並び) */
+    #deckBuilderContainer {
+        flex-direction: column;
+        height: auto;
+    }
+    #deckCardSearchContainer, #deckListContainer {
+        flex: 1;
+        height: 60vh; /* 高さを指定 */
+    }
 
-.notification-toast {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    
-    /* ★ 修正: 幅を100% (親のpadding基準) に */
-    width: 100%; 
-    max-width: 500px; /* ただし最大幅を設定 */
-    
-    padding: 12px 16px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px var(--color-shadow);
-    
-    background-color: var(--color-on-surface);
-    color: var(--color-background);
-    pointer-events: all;
-    animation: slideUp 0.3s ease-out;
-    display: none; /* JSで制御 */
-}
-/* トーストのタイプ別スタイル */
-.notification-toast.info {
-    background-color: var(--color-primary-variant);
-    color: var(--color-on-background);
-}
-.notification-toast.success {
-    background-color: var(--color-success);
-    color: var(--color-on-primary);
-}
-.notification-toast.error {
-    background-color: var(--color-error);
-    color: var(--color-on-primary);
-}
+    .card-list {
+        padding: 0.5rem;
+        gap: 0.5rem;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
 
-.notification-toast p {
-    margin: 0;
-    margin-right: 12px;
-    font-size: 14px;
-    font-weight: 500;
-}
-.notification-toast button {
-    padding: 4px 8px;
-    font-size: 14px;
-    font-weight: bold;
-    border-radius: 6px;
-    background: none;
-    flex-shrink: 0;
-}
-/* トーストのタイプに応じてボタン色を変更 */
-.notification-toast.info button { color: var(--color-secondary); }
-.notification-toast.success button { color: var(--color-on-primary); }
-.notification-toast.error button { color: var(--color-on-primary); }
+    .modal-content {
+        margin: 10% auto;
+        width: 95%;
+        padding: 1rem;
+    }
 
-.notification-toast button:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-}
-.notification-toast.info button:hover {
-    background-color: rgba(0, 0, 0, 0.1);
-}
-.notification-toast .dismiss-btn {
-    font-size: 20px;
-    padding: 0 4px;
-    background: none;
-}
+    #cardModal .modal-content {
+        padding: 1rem;
+    }
 
-/* === 12. 進捗バー === */
-.cache-progress-container {
-    /* ★ 修正: position: absolute (親の .app-header 基準) */
-    position: absolute;
-    height: 4px;
-    background-color: var(--color-border);
-    display: none; /* JSで表示 */
-    /* ★ 修正: bottom: 0 (ヘッダーの最下部) */
-    bottom: 0;
-    left: 0;
-    right: 0;
-    
-    z-index: 11;
+    #cardModal img {
+        max-width: 250px;
+    }
 }
-.cache-progress-bar {
-    height: 100%;
-    width: 0%;
-    background-color: var(--color-progress);
-    transition: width 0.2s linear;
-}
-.cache-progress-text {
-    /* (現在は非表示、必要ならスタイル追加) */
-    display: none;
-}
-/* JSで display: none がインラインスタイルで設定された場合も確実に隠す */
-#cache-progress-container[style*="display: none;"] {
-    display: none !important;
-}
-
-
-/* === 13. アニメーション === */
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-@keyframes slideIn {
-    from { transform: translateY(30px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-}
-@keyframes slideUp {
-    from { transform: translateY(50px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-}
-
