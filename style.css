@@ -131,6 +131,41 @@ button:hover {
     transform: scale(1.05);
 }
 
+/* カード画像プレースホルダー */
+.card-placeholder {
+    width: 100%;
+    height: 0;
+    padding-bottom: 140%; /* カードのアスペクト比 (高さ/幅) */
+    position: relative; /* 子要素を絶対配置するため */
+    background-color: #eee;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    box-sizing: border-box;
+    display: block;
+    cursor: default; /* 画像ではないのでカーソルをデフォルトに */
+}
+
+/* テキストを中央に配置 */
+.card-placeholder::after {
+    content: attr(data-card-id); /* data-card-id 属性の値を表示 */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    color: #888;
+    font-size: 0.9rem; /* IDが長い場合を考慮 */
+    text-align: center;
+    padding: 0.5rem;
+    box-sizing: border-box;
+    word-break: break-all; /* IDがはみ出ないように改行 */
+}
+
+
 /* デッキ構築タブ */
 #deckBuilderContainer {
     display: flex;

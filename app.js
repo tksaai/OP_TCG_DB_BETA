@@ -143,7 +143,13 @@ document.addEventListener('DOMContentLoaded', () => {
             img.src = card.imagePath;
             img.alt = card.name;
             img.loading = 'lazy'; // 遅延読み込み
-            img.onerror = () => { img.src = 'https://placehold.co/300x420/eee/ccc?text=No+Image'; };
+            img.onerror = () => {
+                // 画像読み込みエラー時の処理
+                const placeholder = document.createElement('div');
+                placeholder.className = 'card-placeholder';
+                placeholder.setAttribute('data-card-id', card.id); // カードIDをdata属性にセット
+                cardItem.replaceChild(placeholder, img); // img を placeholder に置き換え
+            };
             
             cardItem.appendChild(img);
             
