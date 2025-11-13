@@ -54,16 +54,38 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('cards.json');
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                // HTTP error! (e.g., 404 Not Found, 500 Server Error)
+                throw new Error(`HTTP error! status: ${response.status} (${response.statusText})`);
             }
-            allCards = await response.json();
+            const responseText = await response.text();
+            if (!responseText) {
+                throw new Error("cards.json is empty.");
+            }
+            
+            try {
+                allCards = JSON.parse(responseText);
+            } catch (jsonError) {
+                // JSON parsing error
+                console.error("JSON parse error:", jsonError);
+                throw new Error(`Failed to parse cards.json. Check for syntax errors. (Error: ${jsonError.message})`);
+            }
+
             // console.log(`Loaded ${allCards.length} cards`);
             setupFilters(allCards);
             displayCards(allCards, cardList, 'modal');
             displayCards(allCards, deckCardList, 'deck');
         } catch (error) {
             console.error("カードデータの読み込みに失敗しました:", error);
-            cardList.innerHTML = "<p>カードデータの読み込みに失敗しました。</p>";
+            // Display a more specific error to the user
+            cardList.innerHTML = `<p style="color: red; text-align: center; grid-column: 1 / -1; background: #fff8f8; border: 1px solid #f00; padding: 1rem; border-radius: 8px;">
+                <strong>カードデータの読み込みに失敗しました。</strong><br>
+                以下の点を確認してください:<br>
+                1. <code>cards.json</code> ファイルが <code>index.html</code> と同じフォルダにありますか？<br>
+                2. <code>cards.json</code> の中身が正しいJSON形式ですか？ (空ではありませんか？)<br>
+                3. ローカルサーバー (Live Serverなど) を使って実行していますか？ (<code>file://</code> での実行はできません)<br>
+                <br>
+                <small>エラー詳細: ${error.message}</small>
+            </p>`;
         }
     }
 
