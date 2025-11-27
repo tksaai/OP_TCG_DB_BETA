@@ -15,7 +15,7 @@
     --color-badge-bg: #ff4081; /* 枚数バッジの背景色 */
     --color-badge-text: #ffffff;
 
-    /* グリッド設定 (JavaScriptで変更可能) */
+    /* グリッド設定 */
     --grid-columns: 3;
     --header-height: 60px;
     --footer-height: 60px;
@@ -33,7 +33,8 @@ body {
     background-color: var(--color-bg-primary);
     color: var(--color-text-primary);
     overflow: hidden; /* アプリっぽくスクロールを制御 */
-    height: 100vh;
+    height: 100vh; /* Fallback */
+    height: 100dvh; /* Mobile Safari address bar fix */
     width: 100vw;
     user-select: none; /* テキスト選択を無効化 */
 }
@@ -48,16 +49,17 @@ body {
 
 /* === ヘッダー === */
 .app-header {
-    height: var(--header-height);
+    height: calc(var(--header-height) + env(safe-area-inset-top));
+    padding-top: env(safe-area-inset-top);
     background-color: var(--color-bg-secondary);
     display: flex;
     align-items: center;
-    padding: 0 10px;
-    padding-top: env(safe-area-inset-top); /* ステータスバー回避 */
+    padding-left: 10px;
+    padding-right: 10px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.5);
     z-index: 10;
     flex-shrink: 0;
-    position: relative; /* プログレスバー配置のため */
+    position: relative;
 }
 
 /* 環境表示（BETA用） */
@@ -109,7 +111,7 @@ body {
     color: var(--color-text-secondary);
     font-size: 18px;
     cursor: pointer;
-    display: none; /* 初期状態は非表示 */
+    display: none;
     padding: 5px;
 }
 
@@ -136,7 +138,7 @@ body {
     width: 100%;
     height: 4px;
     background-color: var(--color-bg-tertiary);
-    display: none; /* 初期状態非表示 */
+    display: none;
 }
 .cache-progress-bar {
     height: 100%;
@@ -147,7 +149,7 @@ body {
 .cache-progress-text {
     position: absolute;
     right: 5px;
-    bottom: -20px; /* バーの下に表示 */
+    bottom: -20px;
     font-size: 0.7rem;
     color: var(--color-text-secondary);
 }
@@ -157,7 +159,7 @@ body {
 .main-content {
     flex-grow: 1;
     overflow-y: auto;
-    padding: 10px 5px;
+    padding: 0; /* 隙間なしのためパディング削除 */
     position: relative;
     /* スクロールバーのスタイリング (Chrome/Safari) */
     scrollbar-width: thin;
@@ -172,9 +174,8 @@ body {
     padding: 8px;
     font-weight: bold;
     font-size: 0.9rem;
-    margin: -10px -5px 10px -5px; /* mainのpaddingを打ち消す */
     position: sticky;
-    top: -10px;
+    top: 0;
     z-index: 5;
     box-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
@@ -183,7 +184,7 @@ body {
 .card-list-container {
     display: grid;
     grid-template-columns: repeat(var(--grid-columns), 1fr);
-    gap: 8px;
+    gap: 0; /* ★隙間なし */
     /* フッター(60px+safe-area) + ステータスバー(40px) 分の余白を確保 */
     padding-bottom: calc(100px + env(safe-area-inset-bottom));
 }
@@ -192,20 +193,19 @@ body {
     position: relative;
     aspect-ratio: 63 / 88; /* カード比率 */
     background-color: var(--color-bg-tertiary);
-    border-radius: 6px;
+    border-radius: 0; /* ★角丸削除 */
     overflow: hidden;
     cursor: pointer;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-    /* タップ時のハイライトアニメーション用 */
-    transition: transform 0.1s;
+    /* 隙間がないのでボーダーで区切りを入れるか、あえて入れないか。ここでは入れない */
     
     /* ★パフォーマンス改善: 画面外の描画をスキップ */
     content-visibility: auto; 
     contain-intrinsic-size: 100px 140px; /* 推定サイズ */
 }
 
+/* タップ時のフィードバック: 縮小の代わりにフィルタで軽く明るく */
 .card-item:active {
-    transform: scale(0.96);
+    filter: brightness(1.2);
 }
 
 .card-image {
@@ -227,16 +227,17 @@ body {
     font-size: 0.8rem;
     color: var(--color-text-secondary);
     background-color: #333;
+    border: 1px solid #444; /* 境界線が見えるように */
     word-break: break-all;
 }
 
-/* --- 新規追加: デッキ構築用バッジ --- */
+/* --- デッキ構築用バッジ --- */
 .card-badge {
     position: absolute;
     top: 4px;
     right: 4px;
-    width: 28px;
-    height: 28px;
+    width: 24px; /* 少し小さく */
+    height: 24px;
     background-color: var(--color-badge-bg);
     color: var(--color-badge-text);
     border-radius: 50%;
@@ -244,13 +245,13 @@ body {
     align-items: center;
     justify-content: center;
     font-weight: bold;
-    font-size: 1.1rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-    border: 2px solid #fff;
+    font-size: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.7);
+    border: 1px solid #fff;
     z-index: 5;
     pointer-events: none; /* タップイベントを透過 */
 }
-/* 4枚採用時は色を変えるなど */
+/* 4枚採用時は色を変える */
 .card-badge[data-count="4"] {
     background-color: #ffca28; /* Gold */
     color: #000;
@@ -315,7 +316,7 @@ body {
 /* === デッキ編集ステータスバー (下部固定) === */
 .deck-status-bar {
     position: absolute;
-    /* ★修正: iPhone Home Bar 対応 */
+    /* ★修正: iPhone Home Bar 対応 - フッターの上 */
     bottom: calc(var(--footer-height) + env(safe-area-inset-bottom));
     left: 0;
     width: 100%;
@@ -457,7 +458,7 @@ body {
 .modal-content-wrapper {
     width: 90%;
     max-width: 500px;
-    max-height: 80vh; /* キーボードが出ても大丈夫なように */
+    max-height: 80vh;
     display: flex;
     flex-direction: column;
 }
@@ -579,7 +580,7 @@ body {
     border-color: var(--color-accent);
 }
 
-/* 色フィルタの特別スタイル (オプション) */
+/* 色フィルタの特別スタイル */
 .filter-grid.colors .filter-checkbox-ui {
     padding-left: 25px;
     position: relative;
@@ -593,9 +594,9 @@ body {
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background-color: currentColor; /* 文字色と同じに仮設定、JSで制御可能 */
+    background-color: currentColor; 
 }
-/* 各色の設定 (data属性で指定する場合) */
+/* 各色の設定 */
 .filter-checkbox-label[data-color="赤"] .filter-checkbox-ui::before { background-color: #e53935; }
 .filter-checkbox-label[data-color="緑"] .filter-checkbox-ui::before { background-color: #43a047; }
 .filter-checkbox-label[data-color="青"] .filter-checkbox-ui::before { background-color: #1e88e5; }
@@ -626,7 +627,6 @@ body {
     align-items: center;
     justify-content: center;
     z-index: 200;
-    /* touch-action: none;  スワイプ制御のため */
 }
 
 .lightbox-image {
@@ -634,7 +634,6 @@ body {
     max-height: 90vh;
     object-fit: contain;
     user-select: none;
-    /* pointer-events: none;  画像をドラッグさせない */
 }
 
 .lightbox-close-btn {
@@ -654,7 +653,6 @@ body {
     z-index: 201;
 }
 
-/* ライトボックスのフォールバック (画像なし) */
 .lightbox-fallback {
     width: 80vw;
     height: 60vh;

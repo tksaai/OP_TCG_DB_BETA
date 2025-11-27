@@ -23,7 +23,6 @@
     const CARDS_JSON_PATH = Config.paths.cardsJson;
     const APP_VERSION = Config.appVersion;
     const SERVICE_WORKER_PATH = Config.paths.serviceWorker;
-    const CACHE_IMAGES = Config.cacheNames.images;
 
     let db; 
     let allCards = [];
@@ -35,7 +34,7 @@
     let currentMode = 'view'; 
     let editingDeckId = null;
     let editingDeckData = {}; 
-    let editingDeckMeta = {}; 
+    let editingDeckMeta = {}; // { name: string, leader: cardNumber, colors: string[] }
 
     // --- ライトボックス用 ---
     let currentFilteredCards = []; 
@@ -47,6 +46,9 @@
     let isLongPress = false;
     let longPressTimer = null;
     let activeCardIndex = -1;
+
+    // ★ DOM高速化用マップ
+    let cardElementMap = {}; // { cardNumber: HTMLElement }
 
     // === 2. DOM要素のキャッシュ ===
     const $ = (selector) => document.querySelector(selector);
@@ -72,7 +74,7 @@
             cardListContainer: $('#card-list-container'),
             deckListView: $('#deck-list-view'),
             deckListContainer: $('#deck-list-container'),
-            modeMessageBar: $('#mode-message-bar'), // 新規
+            modeMessageBar: $('#mode-message-bar'),
 
             searchBar: $('#search-bar'),
             clearSearchBtn: $('#clear-search-btn'),
@@ -98,7 +100,6 @@
             filterOptionsContainer: $('#filter-options-container'),
             applyFilterBtn: $('#apply-filter-btn'),
             resetFilterBtn: $('#reset-filter-btn'),
-            filterSeries: $('#filter-series'),
     
             settingsModal: $('#settings-modal'),
             closeSettingsModalBtn: $('#close-settings-modal-btn'),
@@ -112,13 +113,11 @@
             lightboxImage: $('#lightbox-image'),
             lightboxFallback: $('#lightbox-fallback'),
             lightboxCloseBtn: $('#lightbox-close-btn'),
-    
-            // 通知関連...
+            
             messageToast: $('#message-toast'),
             messageToastText: $('#message-toast-text'),
             messageToastDismissBtn: $('#message-toast-dismiss-btn'),
-            // ...他の通知要素は省略（既存コード参照）
-             dbUpdateNotification: $('#db-update-notification'),
+            dbUpdateNotification: $('#db-update-notification'),
             dbUpdateApplyBtn: $('#db-update-apply-btn'),
             dbUpdateDismissBtn: $('#db-update-dismiss-btn'),
             appUpdateNotification: $('#app-update-notification'),
@@ -147,7 +146,6 @@
     }
 
     // === 4. データ管理 (DB, JSON) ===
-    // ※ 既存の initDB, checkCardDataVersion, fetchAndUpdateCardData, loadCardsFromDB は変更なし
     async function initDB() {
         try {
             db = await idb.openDB(DB_NAME, DB_VERSION, {
@@ -166,11 +164,9 @@
     async function checkCardDataVersion() {
         if (!db) return;
         await loadCardsFromDB();
-        // オンラインチェック省略（既存コードと同様）
     }
     
     async function fetchAndUpdateCardData(serverLastModified) {
-        // 既存コードと同様
          if (!db) return;
         dom.loadingIndicator.style.display = 'flex';
         dom.loadingIndicator.querySelector('p').textContent = 'カードデータを更新中...';
@@ -221,24 +217,24 @@
     function displayCards(cards) {
         const fragment = document.createDocumentFragment();
         dom.cardListContainer.innerHTML = '';
+        
+        // マップ初期化
+        cardElementMap = {};
 
         if (cards.length === 0) {
             dom.cardListContainer.innerHTML = '<p class="no-results">該当するカードがありません。</p>';
             return;
         }
 
-        // ★ パフォーマンス改善: 
-        // requestAnimationFrameを使ってチャンク（分割）レンダリングするか、
-        // CSSのcontent-visibilityに頼る。今回はCSSで対応済みだが、
-        // DOM操作を最小限にするため、DocumentFragmentを使用。
-        
         cards.forEach((card, index) => {
             const cardItem = document.createElement('div');
             cardItem.className = 'card-item';
             cardItem.dataset.index = index;
-            cardItem.dataset.id = card.cardNumber;
+            cardItem.dataset.id = card.cardNumber; // タッチイベント用ID
             
-            // 画像パス
+            // マップに保存（高速アクセス用）
+            cardElementMap[card.cardNumber] = cardItem;
+
             let largeImagePath = card.imagePath || getGeneratedImagePath(card.cardNumber);
             if(largeImagePath.startsWith('Cards/')) largeImagePath = './' + largeImagePath;
 
@@ -246,8 +242,8 @@
             img.className = 'card-image';
             img.src = largeImagePath;
             img.alt = card.cardName || card.cardNumber;
-            img.loading = 'lazy'; // 遅延読み込み
-            img.decoding = 'async'; // 非同期デコード
+            img.loading = 'lazy'; 
+            img.decoding = 'async';
 
             img.onerror = () => {
                 const fallback = document.createElement('div');
@@ -295,7 +291,7 @@
                     if (navigator.vibrate) navigator.vibrate(50);
                     showLightbox(activeCardIndex);
                 }
-            }, 500); // 500ms長押し
+            }, 500);
         }, { passive: true });
 
         container.addEventListener('touchmove', (e) => {
@@ -313,8 +309,7 @@
                 return;
             }
             
-            // タップ確定
-            if(e.cancelable) e.preventDefault(); // クリックイベント重複防止
+            if(e.cancelable) e.preventDefault();
             handleCardTap(activeCardIndex);
             activeCardIndex = -1;
         });
@@ -325,36 +320,37 @@
         const card = currentFilteredCards[index];
         
         if (currentMode === 'leader_select') {
-            // リーダー選択モード: 即座にデッキ作成へ
             confirmLeaderSelection(card);
         } else if (currentMode === 'deck_edit') {
-            // デッキ編集モード: 枚数変更
             toggleDeckCardCount(card.cardNumber);
         } else {
-            // 閲覧モード: 拡大
             showLightbox(index);
         }
     }
 
-    // リーダー選択確定
     async function confirmLeaderSelection(card) {
-        if (!confirm(`「${card.cardName}」をリーダーにしますか？`)) return;
+        if (!confirm(`「${card.cardName}」(${card.color.join('/')}) をリーダーにしますか？`)) return;
         
         const newDeck = {
             id: crypto.randomUUID(),
-            name: '新規デッキ', // 後で変更可能にするか、ここで入力させる
+            name: '新規デッキ',
             leader: card.cardNumber,
             cards: {},
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
         
-        // デッキを保存して編集開始
+        // リーダーの情報をセットして保存
+        editingDeckMeta = { 
+            name: newDeck.name, 
+            leader: card.cardNumber,
+            colors: card.color // リーダーの色情報を保存
+        };
+        
         await saveDeck(newDeck);
-        startDeckEdit(newDeck);
+        startDeckEdit(newDeck, editingDeckMeta.colors);
     }
 
-    // デッキ内カード枚数トグル (0-4)
     function toggleDeckCardCount(cardNumber) {
         let count = editingDeckData[cardNumber] || 0;
         count++;
@@ -363,8 +359,8 @@
         if (count === 0) delete editingDeckData[cardNumber];
         else editingDeckData[cardNumber] = count;
 
-        // ★パフォーマンス改善: 全再描画せず、バッジのみ更新
-        const cardItem = dom.cardListContainer.querySelector(`.card-item[data-id="${cardNumber}"]`);
+        // ★DOM検索をマップで高速化
+        const cardItem = cardElementMap[cardNumber];
         if (cardItem) {
             let badge = cardItem.querySelector('.card-badge');
             if (count > 0) {
@@ -402,7 +398,9 @@
             return;
         }
         
-        decks.forEach(deck => {
+        for(const deck of decks) {
+            // リーダーカード情報を取得して色などのメタデータを復元する
+            // ※毎回全件取得は重いので、簡易的に表示。編集開始時に詳細取得。
             const el = document.createElement('div');
             el.className = 'deck-item';
             el.innerHTML = `
@@ -415,11 +413,10 @@
                     <button class="deck-btn btn-delete">削除</button>
                 </div>
             `;
-            // イベントリスナー設定
-            el.querySelector('.btn-edit').onclick = () => startDeckEdit(deck);
+            el.querySelector('.btn-edit').onclick = () => prepareDeckEdit(deck);
             el.querySelector('.btn-delete').onclick = () => deleteDeck(deck.id);
             dom.deckListContainer.appendChild(el);
-        });
+        }
     }
 
     function startLeaderSelection() {
@@ -429,26 +426,42 @@
         dom.modeMessageBar.style.display = 'block';
         dom.modeMessageBar.textContent = 'リーダーカードを選択してください';
         
-        // 検索条件リセット＆リーダーのみ表示
         dom.searchBar.value = '';
-        currentFilter = {}; // フィルタクリア
-        
-        applyFiltersAndDisplay(); // ここで自動的に LEADER フィルタがかかる
+        currentFilter = {}; 
+        applyFiltersAndDisplay(); // LEADERフィルタ適用
     }
 
-    async function startDeckEdit(deck) {
+    // 既存デッキの編集準備
+    async function prepareDeckEdit(deck) {
+        // リーダー情報を取得して色を特定する
+        let colors = [];
+        if(deck.leader) {
+            // allCardsからリーダーを探す
+            const leaderCard = allCards.find(c => c.cardNumber === deck.leader);
+            if(leaderCard) colors = leaderCard.color;
+        }
+        
+        editingDeckMeta = { name: deck.name, leader: deck.leader, colors: colors };
+        startDeckEdit(deck, colors);
+    }
+
+    function startDeckEdit(deck, colors) {
         currentMode = 'deck_edit';
         editingDeckId = deck.id;
         editingDeckData = { ...deck.cards };
-        editingDeckMeta = { name: deck.name, leader: deck.leader };
-
+        
+        // ビュー切り替え
         dom.deckListView.style.display = 'none';
         dom.cardListView.style.display = 'block';
         dom.deckStatusBar.classList.add('active');
-        dom.modeMessageBar.style.display = 'none'; // メッセージバー非表示
+        
+        // リーダー色などを表示
+        const colorText = colors && colors.length > 0 ? `(${colors.join('/')})` : '';
+        dom.modeMessageBar.style.display = 'block';
+        dom.modeMessageBar.textContent = `デッキ編集中 ${colorText}`;
 
         updateDeckStatusBar();
-        applyFiltersAndDisplay(); // リーダー除外フィルタがかかる
+        applyFiltersAndDisplay(); // リーダー除外 & 色フィルタ適用
     }
 
     async function saveDeck(deck) {
@@ -462,19 +475,19 @@
         if (!editingDeckId) return;
         const deck = {
             id: editingDeckId,
-            name: editingDeckMeta.name, // 名前編集機能は別途必要だが今回は簡易維持
+            name: editingDeckMeta.name,
             leader: editingDeckMeta.leader,
             cards: editingDeckData,
             updatedAt: new Date().toISOString(),
-            createdAt: new Date().toISOString() // 簡易
+            createdAt: new Date().toISOString() 
         };
         await saveDeck(deck);
         showMessageToast("デッキを保存しました", "success");
         
-        // 編集終了 -> デッキ一覧へ
         currentMode = 'view';
         editingDeckId = null;
         dom.deckStatusBar.classList.remove('active');
+        dom.modeMessageBar.style.display = 'none';
         
         dom.cardListView.style.display = 'none';
         dom.deckListView.style.display = 'block';
@@ -487,39 +500,27 @@
         loadDeckList();
     }
 
-    // === 7. フィルタロジック (モードによる強制フィルタ) ===
-
+    // === 7. フィルタロジック ===
     function populateFilters() {
-         // 簡略化のため既存コードのロジックを維持しつつ生成
-         // (実際にはここに全フィルタ生成コードが入る)
+         // 既存コードと同じロジックで中身を生成 (省略形)
          if (allCards.length === 0) return;
-         
-         // ... フィルタ生成ロジック (色は省略) ...
          const colors = new Set();
          const types = new Set();
          const rarities = new Set();
          const costs = new Set();
-         const seriesSet = new Map();
-
          allCards.forEach(card => {
              if (!card.cardNumber) return;
              if (Array.isArray(card.color)) card.color.forEach(c => colors.add(c));
              if(card.cardType && card.cardType !== 'ドン!!') types.add(card.cardType);
              if(card.rarity) rarities.add(card.rarity);
              if(card.cost !== undefined && card.cost !== null) costs.add(card.cost);
-             const sid = card.cardNumber.split('-')[0];
-             if(sid) seriesSet.set(sid, sid);
          });
-         
-         // ソートしてDOM生成 (省略形)
          const sortedColors = [...colors].sort();
-         // ...
          dom.filterOptionsContainer.innerHTML = `
             ${createFilterGroup('colors', '色', sortedColors, 'colors')}
             ${createFilterGroup('types', '種別', [...types].sort(), 'types')}
             ${createFilterGroup('rarities', 'レアリティ', [...rarities].sort(), 'rarities')}
             ${createFilterGroup('costs', 'コスト', [...costs].map(String).sort((a,b)=>a-b), 'costs')}
-            <!-- シリーズフィルタは省略 -->
          `;
     }
 
@@ -543,24 +544,32 @@
         const searchWords = searchTerm.replace(/　/g, ' ').split(' ').filter(w => w.length > 0);
 
         currentFilteredCards = allCards.filter(card => {
-            // ★ モードによる強制フィルタ
+            // ★ モード別フィルタリング
             if (currentMode === 'leader_select') {
+                // リーダー選択モード：リーダーのみ
                 if (card.cardType !== 'LEADER') return false;
             } else if (currentMode === 'deck_edit') {
-                // デッキ編集時はリーダーを除外
+                // デッキ編集モード：
+                // 1. リーダーカード自体はリストに出さない
                 if (card.cardType === 'LEADER') return false;
+                
+                // 2. 色制限：リーダーの色を1つでも含んでいるか
+                if (editingDeckMeta.colors && editingDeckMeta.colors.length > 0) {
+                    // カードの色配列とリーダーの色配列に共通部分があるか
+                    const cardColors = card.color || [];
+                    const hasMatchingColor = cardColors.some(c => editingDeckMeta.colors.includes(c));
+                    if (!hasMatchingColor) return false;
+                }
             }
 
             if (!card.cardNumber) return false;
             
-            // 検索ワード
             if (searchWords.length > 0) {
                 let text = [card.cardName, card.effectText, (card.features||[]).join(' '), card.cardNumber].join(' ');
                 text = toHalfWidth(toKatakana(text)).toUpperCase();
                 if (!searchWords.every(w => text.includes(w))) return false;
             }
 
-            // 既存フィルタ
             const f = currentFilter;
             if (f.colors?.length > 0 && (!card.color || !f.colors.some(c => card.color.includes(c)))) return false;
             if (f.types?.length > 0 && !f.types.includes(card.cardType)) return false;
@@ -586,8 +595,7 @@
     // === 8. イベントリスナー ===
     function setupEventListeners() {
         if (!dom.searchBar) return;
-
-        // 検索
+        
         dom.searchBar.addEventListener('input', () => {
             dom.clearSearchBtn.style.display = dom.searchBar.value.length > 0 ? 'block' : 'none';
             setTimeout(applyFiltersAndDisplay, 300);
@@ -597,8 +605,6 @@
             dom.clearSearchBtn.style.display = 'none';
             applyFiltersAndDisplay();
         });
-
-        // フィルタ
         dom.filterBtn.addEventListener('click', () => dom.filterModal.style.display = 'flex');
         dom.closeFilterModalBtn.addEventListener('click', () => dom.filterModal.style.display = 'none');
         dom.applyFilterBtn.addEventListener('click', () => {
@@ -611,7 +617,6 @@
             currentFilter = {};
         });
 
-        // ナビゲーション
         dom.navCards.addEventListener('click', () => {
             if (currentMode === 'leader_select' || currentMode === 'deck_edit') {
                 if(!confirm('デッキ作成・編集を中断しますか？')) return;
@@ -627,7 +632,7 @@
         });
 
         dom.navDecks.addEventListener('click', () => {
-            currentMode = 'view'; // 一旦リセット
+            currentMode = 'view';
             dom.cardListView.style.display = 'none';
             dom.deckListView.style.display = 'block';
             dom.deckStatusBar.classList.remove('active');
@@ -637,11 +642,9 @@
             loadDeckList();
         });
 
-        // デッキ作成
         dom.createNewDeckBtn.addEventListener('click', startLeaderSelection);
         dom.deckSaveBtn.addEventListener('click', saveCurrentDeck);
 
-        // 設定
         dom.settingsBtn.addEventListener('click', () => dom.settingsModal.style.display = 'flex');
         dom.closeSettingsModalBtn.addEventListener('click', () => dom.settingsModal.style.display = 'none');
         dom.columnToggleBtn.addEventListener('click', () => {
@@ -650,17 +653,13 @@
             setGridColumns(c);
         });
 
-        // タッチ
         setupCardTouchEvents();
-
-        // ライトボックス
         dom.lightboxCloseBtn.addEventListener('click', () => {
             dom.lightboxModal.style.display = 'none';
             dom.lightboxImage.src = '';
         });
     }
 
-    // 補助関数
     function showLightbox(index) {
         if (index < 0 || index >= currentFilteredCards.length) return;
         const card = currentFilteredCards[index];
@@ -688,6 +687,16 @@
         if ('serviceWorker' in navigator) {
             try { await navigator.serviceWorker.register(SERVICE_WORKER_PATH); } catch(e){}
         }
+    }
+    function showDbUpdateNotification(mod){
+        dom.dbUpdateNotification.style.display = 'flex';
+        const btn = dom.dbUpdateApplyBtn.cloneNode(true);
+        dom.dbUpdateApplyBtn.parentNode.replaceChild(btn, dom.dbUpdateApplyBtn);
+        dom.dbUpdateApplyBtn = btn;
+        btn.addEventListener('click', () => {
+            dom.dbUpdateNotification.style.display='none';
+            fetchAndUpdateCardData(mod);
+        });
     }
 
     window.addEventListener('load', initializeApp);
