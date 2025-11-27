@@ -53,6 +53,7 @@ body {
     display: flex;
     align-items: center;
     padding: 0 10px;
+    padding-top: env(safe-area-inset-top); /* ステータスバー回避 */
     box-shadow: 0 2px 4px rgba(0,0,0,0.5);
     z-index: 10;
     flex-shrink: 0;
@@ -62,7 +63,7 @@ body {
 /* 環境表示（BETA用） */
 .env-badge {
     position: absolute;
-    top: 2px;
+    top: calc(2px + env(safe-area-inset-top));
     left: 50%;
     transform: translateX(-50%);
     background-color: var(--color-error);
@@ -163,12 +164,28 @@ body {
     scrollbar-color: var(--color-bg-tertiary) var(--color-bg-primary);
 }
 
+/* --- メッセージバー (リーダー選択時など) --- */
+.mode-message-bar {
+    background-color: var(--color-accent);
+    color: #000;
+    text-align: center;
+    padding: 8px;
+    font-weight: bold;
+    font-size: 0.9rem;
+    margin: -10px -5px 10px -5px; /* mainのpaddingを打ち消す */
+    position: sticky;
+    top: -10px;
+    z-index: 5;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
 /* カードリスト */
 .card-list-container {
     display: grid;
     grid-template-columns: repeat(var(--grid-columns), 1fr);
     gap: 8px;
-    padding-bottom: 80px; /* フッター + デッキバー分 */
+    /* フッター(60px+safe-area) + ステータスバー(40px) 分の余白を確保 */
+    padding-bottom: calc(100px + env(safe-area-inset-bottom));
 }
 
 .card-item {
@@ -181,6 +198,10 @@ body {
     box-shadow: 0 1px 3px rgba(0,0,0,0.3);
     /* タップ時のハイライトアニメーション用 */
     transition: transform 0.1s;
+    
+    /* ★パフォーマンス改善: 画面外の描画をスキップ */
+    content-visibility: auto; 
+    contain-intrinsic-size: 100px 140px; /* 推定サイズ */
 }
 
 .card-item:active {
@@ -238,7 +259,7 @@ body {
 /* === デッキ一覧画面 === */
 .deck-list-view {
     padding: 10px;
-    padding-bottom: 80px;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
 }
 
 .deck-item {
@@ -294,7 +315,8 @@ body {
 /* === デッキ編集ステータスバー (下部固定) === */
 .deck-status-bar {
     position: absolute;
-    bottom: var(--footer-height); /* フッターの上に配置 */
+    /* ★修正: iPhone Home Bar 対応 */
+    bottom: calc(var(--footer-height) + env(safe-area-inset-bottom));
     left: 0;
     width: 100%;
     height: 40px;
@@ -307,7 +329,7 @@ body {
     z-index: 20;
     box-shadow: 0 -2px 4px rgba(0,0,0,0.3);
     font-size: 0.9rem;
-    transform: translateY(100%); /* 初期状態は隠す */
+    transform: translateY(150%); /* 初期状態は隠す */
     transition: transform 0.3s ease;
 }
 .deck-status-bar.active {
@@ -358,7 +380,10 @@ body {
 
 /* === フッター === */
 .app-footer {
-    height: var(--footer-height);
+    /* ★修正: iPhone Home Bar 対応 */
+    height: calc(var(--footer-height) + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    
     background-color: var(--color-bg-secondary);
     border-top: 1px solid var(--color-border);
     flex-shrink: 0;
@@ -368,7 +393,8 @@ body {
 .footer-nav {
     display: flex;
     justify-content: space-around;
-    height: 100%;
+    height: var(--footer-height); /* コンテンツの高さは固定 */
+    align-items: center;
 }
 
 .nav-btn {
@@ -383,6 +409,7 @@ body {
     cursor: pointer;
     font-size: 0.7rem;
     gap: 4px;
+    height: 100%;
 }
 
 .nav-btn.active {
@@ -430,7 +457,7 @@ body {
 .modal-content-wrapper {
     width: 90%;
     max-width: 500px;
-    max-height: 90vh;
+    max-height: 80vh; /* キーボードが出ても大丈夫なように */
     display: flex;
     flex-direction: column;
 }
@@ -642,7 +669,7 @@ body {
 /* === 通知トースト === */
 .notification-toast {
     position: fixed;
-    bottom: 80px;
+    bottom: calc(80px + env(safe-area-inset-bottom)); /* フッターの上 */
     left: 50%;
     transform: translateX(-50%);
     background-color: var(--color-bg-secondary);
