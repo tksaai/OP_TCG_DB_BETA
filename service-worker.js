@@ -2,25 +2,12 @@
  * Service Worker for OP-TCG DB PWA (GitHub Pages compatible)
  * ファイル名を元の名前に修正
  * HEADリクエストで cache.put しないように修正
- *
- * [修正] 開発環境(BETA)と本番環境のキャッシュを分離
  */
 
-// === 1. 環境判定と定数 ===
-
-// 現在のスコープ（URL）から環境を判定
-// (例: /OP_TCG_DB/ または /OP_TCG_DB_BETA/)
-const scopePath = new URL(self.registration.scope).pathname;
-
-const isBeta = scopePath.includes('OP_TCG_DB_BETA');
-const envSuffix = isBeta ? '-beta' : ''; // 本番はサフィックスなし
-
-console.log(`[SW] Environment Suffix: "${envSuffix}" (Scope: ${scopePath})`);
-
-// キャッシュ名に環境サフィックスを追加
-const CACHE_APP_SHELL = `app-shell-v1${envSuffix}`;
-const CACHE_CARD_DATA = `card-data-v1${envSuffix}`;
-const CACHE_IMAGES = `card-images-v1${envSuffix}`;
+// === 1. 定数 ===
+const CACHE_APP_SHELL = 'app-shell-v1';
+const CACHE_CARD_DATA = 'card-data-v1';
+const CACHE_IMAGES = 'card-images-v1';
 
 // GitHub Pagesのリポジトリ名を考慮し、パスを `./` から始める
 // ファイル名を元の名前に修正
@@ -29,7 +16,7 @@ const APP_SHELL_FILES = [
     './index.html',
     './style.css',
     './app.js', // ファイル名を修正
-    './manifest.json', // manifest.json も環境分離が必要なら、別途対応が必要
+    './manifest.json',
     './icons/iconx192.png',
     './icons/iconx512.png',
     'https://cdn.jsdelivr.net/npm/idb@8/build/umd.js' // CDNはそのまま
@@ -86,7 +73,7 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
     console.log('[SW] Activate event');
     
-    // [修正] 古いキャッシュを削除 (動的なホワイトリストを使用)
+    // 古いキャッシュを削除
     const cacheWhitelist = [CACHE_APP_SHELL, CACHE_CARD_DATA, CACHE_IMAGES];
     
     event.waitUntil(
@@ -129,7 +116,6 @@ self.addEventListener('fetch', (event) => {
 
     // console.log(`[SW] Handling GET: ${requestPath}, Relative: ${relativePath}, Base: ${basePath}`);
 
-    // [修正] 判定ロジックはそのまま、渡すキャッシュ名を動的に変更
     // 1. アプリシェル (Stale-While-Revalidate)
     if (APP_SHELL_FILES.includes(relativePath) || url.origin === 'https://cdn.jsdelivr.net') {
         event.respondWith(staleWhileRevalidate(event.request, CACHE_APP_SHELL));
@@ -265,3 +251,4 @@ self.addEventListener('message', (event) => {
         self.skipWaiting();
     }
 });
+

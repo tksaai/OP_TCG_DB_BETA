@@ -1,0 +1,716 @@
+/* === 基本設定 === */
+:root {
+    --color-bg-primary: #121212;
+    --color-bg-secondary: #1e1e1e;
+    --color-bg-tertiary: #2c2c2c;
+    --color-text-primary: #ffffff;
+    --color-text-secondary: #b0b0b0;
+    --color-accent: #bb86fc;
+    --color-accent-variant: #3700b3;
+    --color-error: #cf6679;
+    --color-success: #03dac6;
+    --color-border: #333333;
+    
+    /* デッキ構築用カラー */
+    --color-badge-bg: #ff4081; /* 枚数バッジの背景色 */
+    --color-badge-text: #ffffff;
+
+    /* グリッド設定 (JavaScriptで変更可能) */
+    --grid-columns: 3;
+    --header-height: 60px;
+    --footer-height: 60px;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent; /* タップ時のハイライトを消す */
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    overflow: hidden; /* アプリっぽくスクロールを制御 */
+    height: 100vh;
+    width: 100vw;
+    user-select: none; /* テキスト選択を無効化 */
+}
+
+/* === レイアウト === */
+.app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    position: relative;
+}
+
+/* === ヘッダー === */
+.app-header {
+    height: var(--header-height);
+    background-color: var(--color-bg-secondary);
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    z-index: 10;
+    flex-shrink: 0;
+    position: relative; /* プログレスバー配置のため */
+}
+
+/* 環境表示（BETA用） */
+.env-badge {
+    position: absolute;
+    top: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--color-error);
+    color: white;
+    font-size: 0.6rem;
+    padding: 1px 6px;
+    border-radius: 4px;
+    pointer-events: none;
+    z-index: 20;
+    opacity: 0.8;
+}
+
+.header-content {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 10px;
+}
+
+/* 検索バー */
+.search-bar-container {
+    flex-grow: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+#search-bar {
+    width: 100%;
+    padding: 8px 35px 8px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--color-border);
+    background-color: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+    font-size: 16px; /* iOSでズームしないサイズ */
+}
+
+.clear-search-btn {
+    position: absolute;
+    right: 8px;
+    background: none;
+    border: none;
+    color: var(--color-text-secondary);
+    font-size: 18px;
+    cursor: pointer;
+    display: none; /* 初期状態は非表示 */
+    padding: 5px;
+}
+
+.header-btn {
+    background: none;
+    border: none;
+    color: var(--color-text-primary);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.header-btn:active {
+    background-color: rgba(255,255,255,0.1);
+}
+
+/* キャッシュ進捗バー */
+.cache-progress-container {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background-color: var(--color-bg-tertiary);
+    display: none; /* 初期状態非表示 */
+}
+.cache-progress-bar {
+    height: 100%;
+    background-color: var(--color-success);
+    width: 0%;
+    transition: width 0.3s ease;
+}
+.cache-progress-text {
+    position: absolute;
+    right: 5px;
+    bottom: -20px; /* バーの下に表示 */
+    font-size: 0.7rem;
+    color: var(--color-text-secondary);
+}
+
+
+/* === メインコンテンツ === */
+.main-content {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 10px 5px;
+    position: relative;
+    /* スクロールバーのスタイリング (Chrome/Safari) */
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-bg-tertiary) var(--color-bg-primary);
+}
+
+/* カードリスト */
+.card-list-container {
+    display: grid;
+    grid-template-columns: repeat(var(--grid-columns), 1fr);
+    gap: 8px;
+    padding-bottom: 80px; /* フッター + デッキバー分 */
+}
+
+.card-item {
+    position: relative;
+    aspect-ratio: 63 / 88; /* カード比率 */
+    background-color: var(--color-bg-tertiary);
+    border-radius: 6px;
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    /* タップ時のハイライトアニメーション用 */
+    transition: transform 0.1s;
+}
+
+.card-item:active {
+    transform: scale(0.96);
+}
+
+.card-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* 画像読み込みエラー時のフォールバック */
+.card-fallback {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 5px;
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    background-color: #333;
+    word-break: break-all;
+}
+
+/* --- 新規追加: デッキ構築用バッジ --- */
+.card-badge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 28px;
+    height: 28px;
+    background-color: var(--color-badge-bg);
+    color: var(--color-badge-text);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    border: 2px solid #fff;
+    z-index: 5;
+    pointer-events: none; /* タップイベントを透過 */
+}
+/* 4枚採用時は色を変えるなど */
+.card-badge[data-count="4"] {
+    background-color: #ffca28; /* Gold */
+    color: #000;
+}
+
+/* === デッキ一覧画面 === */
+.deck-list-view {
+    padding: 10px;
+    padding-bottom: 80px;
+}
+
+.deck-item {
+    background-color: var(--color-bg-secondary);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: 1px solid var(--color-border);
+}
+
+.deck-info {
+    flex-grow: 1;
+}
+.deck-name {
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+.deck-meta {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+}
+.deck-actions {
+    display: flex;
+    gap: 10px;
+}
+.deck-btn {
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+.btn-edit { background-color: var(--color-accent); color: #000; }
+.btn-delete { background-color: var(--color-bg-tertiary); color: var(--color-error); }
+
+.create-deck-btn {
+    width: 100%;
+    padding: 15px;
+    background-color: var(--color-accent-variant);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: bold;
+    margin-bottom: 20px;
+    cursor: pointer;
+}
+
+/* === デッキ編集ステータスバー (下部固定) === */
+.deck-status-bar {
+    position: absolute;
+    bottom: var(--footer-height); /* フッターの上に配置 */
+    left: 0;
+    width: 100%;
+    height: 40px;
+    background-color: rgba(55, 0, 179, 0.95); /* アクセントカラー */
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 15px;
+    z-index: 20;
+    box-shadow: 0 -2px 4px rgba(0,0,0,0.3);
+    font-size: 0.9rem;
+    transform: translateY(100%); /* 初期状態は隠す */
+    transition: transform 0.3s ease;
+}
+.deck-status-bar.active {
+    transform: translateY(0);
+}
+.deck-count-info {
+    font-weight: bold;
+}
+.deck-save-btn {
+    background: white;
+    color: var(--color-accent-variant);
+    border: none;
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+/* === ローディング === */
+.loading-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    color: var(--color-text-secondary);
+}
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--color-bg-tertiary);
+    border-top: 4px solid var(--color-accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 10px;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+.no-results {
+    text-align: center;
+    padding: 20px;
+    color: var(--color-text-secondary);
+    grid-column: 1 / -1;
+}
+
+
+/* === フッター === */
+.app-footer {
+    height: var(--footer-height);
+    background-color: var(--color-bg-secondary);
+    border-top: 1px solid var(--color-border);
+    flex-shrink: 0;
+    z-index: 30; /* ステータスバーより上 */
+}
+
+.footer-nav {
+    display: flex;
+    justify-content: space-around;
+    height: 100%;
+}
+
+.nav-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--color-text-secondary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.7rem;
+    gap: 4px;
+}
+
+.nav-btn.active {
+    color: var(--color-accent);
+}
+
+.nav-btn svg {
+    fill: currentColor;
+}
+
+/* 列数切り替えアイコン内の数字 */
+.column-icon {
+    position: relative;
+}
+.column-count-display {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 10px;
+    font-weight: bold;
+    color: var(--color-bg-secondary); /* アイコンの色に合わせるため背景色 */
+}
+.nav-btn.active .column-count-display {
+    color: var(--color-bg-secondary);
+}
+
+
+/* === モーダル共通 === */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.modal-content-wrapper {
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-content {
+    background-color: var(--color-bg-secondary);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    max-height: 100%;
+}
+
+.modal-header {
+    padding: 15px;
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h2 {
+    font-size: 1.2rem;
+    font-weight: normal;
+}
+
+.modal-close-btn {
+    background: none;
+    border: none;
+    color: var(--color-text-secondary);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0 5px;
+}
+
+.modal-body {
+    padding: 15px;
+    overflow-y: auto;
+}
+
+.modal-footer {
+    padding: 15px;
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.modal-btn {
+    padding: 8px 16px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.modal-btn-primary {
+    background-color: var(--color-accent-variant);
+    color: white;
+}
+
+.modal-btn-secondary {
+    background-color: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+}
+
+.modal-btn-danger {
+    background-color: var(--color-error);
+    color: white;
+}
+
+/* === フィルタモーダル === */
+.filter-group {
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 15px;
+}
+
+.filter-group legend {
+    padding: 0 5px;
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+}
+
+.filter-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* チェックボックスのカスタマイズ */
+.filter-checkbox-label {
+    cursor: pointer;
+    position: relative;
+}
+
+.filter-checkbox {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.filter-checkbox-ui {
+    display: inline-block;
+    padding: 6px 12px;
+    background-color: var(--color-bg-tertiary);
+    border-radius: 20px;
+    font-size: 0.9rem;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+    user-select: none;
+}
+
+.filter-checkbox:checked + .filter-checkbox-ui {
+    background-color: var(--color-accent-variant);
+    color: white;
+    border-color: var(--color-accent);
+}
+
+/* 色フィルタの特別スタイル (オプション) */
+.filter-grid.colors .filter-checkbox-ui {
+    padding-left: 25px;
+    position: relative;
+}
+.filter-grid.colors .filter-checkbox-ui::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: currentColor; /* 文字色と同じに仮設定、JSで制御可能 */
+}
+/* 各色の設定 (data属性で指定する場合) */
+.filter-checkbox-label[data-color="赤"] .filter-checkbox-ui::before { background-color: #e53935; }
+.filter-checkbox-label[data-color="緑"] .filter-checkbox-ui::before { background-color: #43a047; }
+.filter-checkbox-label[data-color="青"] .filter-checkbox-ui::before { background-color: #1e88e5; }
+.filter-checkbox-label[data-color="紫"] .filter-checkbox-ui::before { background-color: #8e24aa; }
+.filter-checkbox-label[data-color="黒"] .filter-checkbox-ui::before { background-color: #212121; border: 1px solid #555; }
+.filter-checkbox-label[data-color="黄"] .filter-checkbox-ui::before { background-color: #fdd835; }
+
+
+/* Select Box */
+.filter-select {
+    width: 100%;
+    padding: 8px;
+    border-radius: 4px;
+    background-color: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border);
+}
+
+/* === ライトボックス === */
+.lightbox-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    /* touch-action: none;  スワイプ制御のため */
+}
+
+.lightbox-image {
+    max-width: 100%;
+    max-height: 90vh;
+    object-fit: contain;
+    user-select: none;
+    /* pointer-events: none;  画像をドラッグさせない */
+}
+
+.lightbox-close-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    color: white;
+    font-size: 2rem;
+    cursor: pointer;
+    background: rgba(0,0,0,0.5);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 201;
+}
+
+/* ライトボックスのフォールバック (画像なし) */
+.lightbox-fallback {
+    width: 80vw;
+    height: 60vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-secondary);
+    border: 1px dashed var(--color-border);
+    font-size: 1.5rem;
+}
+
+/* === 通知トースト === */
+.notification-toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+    padding: 12px 20px;
+    border-radius: 50px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    z-index: 150;
+    width: 90%;
+    max-width: 400px;
+    border: 1px solid var(--color-border);
+    animation: slideUp 0.3s ease;
+}
+@keyframes slideUp {
+    from { transform: translate(-50%, 20px); opacity: 0; }
+    to { transform: translate(-50%, 0); opacity: 1; }
+}
+
+.notification-toast p {
+    flex-grow: 1;
+    font-size: 0.9rem;
+}
+
+.notification-toast button {
+    background: none;
+    border: 1px solid var(--color-border);
+    color: var(--color-text-primary);
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+.notification-toast button:hover {
+    background-color: var(--color-bg-tertiary);
+}
+.notification-toast .dismiss-btn {
+    border: none;
+    font-size: 1.2rem;
+    padding: 0 5px;
+}
+
+.notification-toast.error {
+    border-left: 4px solid var(--color-error);
+}
+.notification-toast.success {
+    border-left: 4px solid var(--color-success);
+}
+.notification-toast.info {
+    border-left: 4px solid var(--color-accent);
+}
+
+/* === 設定モーダル内 === */
+.app-version {
+    margin-top: 20px;
+    text-align: center;
+    color: var(--color-text-secondary);
+    font-size: 0.8rem;
+}
+
+.setting-item {
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--color-bg-primary);
+}
+.setting-item p {
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+}
